@@ -3,3 +3,5 @@ FADC_waveform/data
 FADC_waveform/.ipynb_checkpoints
 FADC_SRO/data
 *.txt
+*.swp
+FADC_SRO/output
