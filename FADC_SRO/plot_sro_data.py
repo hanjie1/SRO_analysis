@@ -41,36 +41,39 @@ for event in loaded_data:
               slot5_data[chan]['time'].append(event['payload_timestamp'][ii])
               slot5_data[chan]['charge'].append(event['payload_charge'][ii])
 
-plt.figure()
+plt.figure(figsize=(12, 10))
 plt.plot(evt_frame_number,evt_timestamp)
 plt.xlabel("frame number")
 plt.ylabel("time stamp")
 
-fig1, axs1 = plt.subplots(nrows=4, ncols=4)
+fig1, axs1 = plt.subplots(nrows=4, ncols=4,figsize=(12, 10))
 for xx in range(4):
     for yy in range(4):
         chan = xx*4+yy
         axs1[xx,yy].hist(slot3_data[chan]['time'],bins=100)
         axs1[xx,yy].set_title(f'Chan {chan}')
 fig1.suptitle("SLOT 3 Hit time")
+plt.tight_layout()
 
-fig2, axs2 = plt.subplots(nrows=4, ncols=4)
+fig2, axs2 = plt.subplots(nrows=4, ncols=4,figsize=(12, 10))
 for xx in range(4):
     for yy in range(4):
         chan = xx*4+yy
         axs2[xx,yy].hist(slot3_data[chan]['charge'],bins=100)
         axs2[xx,yy].set_title(f'Chan {chan}')
 fig2.suptitle("SLOT 3 Charge")
+plt.tight_layout()
 
-fig3, axs3 = plt.subplots(nrows=4, ncols=4)
+fig3, axs3 = plt.subplots(nrows=4, ncols=4,figsize=(12, 10))
 for xx in range(4):
     for yy in range(4):
         chan = xx*4+yy
         axs3[xx,yy].hist(slot5_data[chan]['time'],bins=100)
         axs3[xx,yy].set_title(f'Chan {chan}')
 fig3.suptitle("SLOT 5 Hit time")
+plt.tight_layout()
 
-fig4, axs4 = plt.subplots(nrows=4, ncols=4)
+fig4, axs4 = plt.subplots(nrows=4, ncols=4,figsize=(12, 10))
 for xx in range(4):
     for yy in range(4):
         chan = xx*4+yy

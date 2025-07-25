@@ -4,6 +4,7 @@ from pyevio import EvioFile
 from pyevio.decoders.fadc250_triggered import FaDecoder, FadcDataStruct
 import matplotlib.pyplot as plt
 import os
+import re
 
 #def decode_fadc_bank(bank, decoder, verbose=False):  # this function can't decode multi slot data
 #    """
@@ -69,20 +70,6 @@ def process_event(event, event_index, verbose=False):
 
         # Data structures to hold results
         event_list=[]  # a list of slot data
-        event_data = {
-            'waveforms': np.zeros((FADC_NCHAN, MAX_SAMPLES), dtype=np.int16),
-            'info': {
-                'slot_id': 0,
-                'evt_num': 0,
-                'time': 0,
-                'channels': [],
-                'widths': np.zeros(FADC_NCHAN, dtype=np.int32),
-                'integrals': np.zeros(FADC_NCHAN, dtype=np.int32),
-                'peaks': np.zeros(FADC_NCHAN, dtype=np.int32),
-                'overs': np.zeros(FADC_NCHAN, dtype=np.bool_),
-            },
-            'has_data': False
-        } # per slot
 
 
         # Process all FADC banks
@@ -104,14 +91,27 @@ def process_event(event, event_index, verbose=False):
             for word in words:
                 decoder.faDataDecode(int(word), verbose=verbose)
                 if decoder.block_trailer_found:
+                    event_data = {
+                        'waveforms': np.zeros((FADC_NCHAN, MAX_SAMPLES), dtype=np.int16),
+                        'info': {
+                            'slot_id': 0,
+                            'evt_num': 0,
+                            'time': 0,
+                            'channels': [],
+                            'widths': np.zeros(FADC_NCHAN, dtype=np.int32),
+                            'integrals': np.zeros(FADC_NCHAN, dtype=np.int32),
+                            'peaks': np.zeros(FADC_NCHAN, dtype=np.int32),
+                            'overs': np.zeros(FADC_NCHAN, dtype=np.bool_),
+                        },
+                        'has_data': False
+                    } # per slot
                     # Check if we have raw data
+                    event_data['info']['slot_id'] = decoder.fadc_data.slot_id_hd
+                    event_data['info']['evt_num'] = decoder.fadc_data.evt_num_1
+                    event_data['info']['time'] = decoder.fadc_trigtime
                     for chan in range(FADC_NCHAN):
                         if decoder.fadc_nhit[chan] > 0:
                             # Update event data with info from this channel
-                            event_data['info']['slot_id'] = decoder.fadc_data.slot_id_hd
-                            event_data['info']['evt_num'] = decoder.fadc_data.evt_num_1
-                            event_data['info']['time'] = decoder.fadc_trigtime
-
                             if chan not in event_data['info']['channels']:
                                 event_data['info']['channels'].append(chan)
 
@@ -137,6 +137,7 @@ def process_event(event, event_index, verbose=False):
                     event_list.append(event_data)
                     del decoder
                     decoder = FaDecoder()  # each block (each slot) has its decoder
+
 
         if event_list is not None:
             return event_list
@@ -190,26 +191,24 @@ def collect_event_data(events_data):
         ('overs', np.object_)      # Array of channel over flags
     ])
 
-    fadc_info = np.zeros(valid_events, dtype=fadc_dtype)
+    fadc_info = np.zeros((valid_events,len(FADC_SLOT)), dtype=fadc_dtype)
 
     # Fill arrays
     for i, event_list in enumerate(events_data):
         for event_data in event_list:
             # Copy metadata
-            fadc_info[i]['slot_id'] = event_data['info']['slot_id']
-            fadc_info[i]['evt_num'] = event_data['info']['evt_num']
-            fadc_info[i]['time'] = event_data['info']['time']
-            fadc_info[i]['channels'] = event_data['info']['channels']
-            fadc_info[i]['widths'] = event_data['info']['widths']
-            fadc_info[i]['integrals'] = event_data['info']['integrals']
-            fadc_info[i]['peaks'] = event_data['info']['peaks']
-            fadc_info[i]['overs'] = event_data['info']['overs']
+            slot_idx = FADC_SLOT.index(event_data['info']['slot_id'])
+            fadc_info[i][slot_idx]['slot_id'] = event_data['info']['slot_id']
+            fadc_info[i][slot_idx]['evt_num'] = event_data['info']['evt_num']
+            fadc_info[i][slot_idx]['time'] = event_data['info']['time']
+            fadc_info[i][slot_idx]['channels'] = event_data['info']['channels']
+            fadc_info[i][slot_idx]['widths'] = event_data['info']['widths']
+            fadc_info[i][slot_idx]['integrals'] = event_data['info']['integrals']
+            fadc_info[i][slot_idx]['peaks'] = event_data['info']['peaks']
+            fadc_info[i][slot_idx]['overs'] = event_data['info']['overs']
 
             # Copy waveform data
-            if fadc_info[i]['slot_id'] in FADC_SLOT:
-                slot_idx = FADC_SLOT.index(fadc_info[i]['slot_id'])
-                waveforms[i, slot_idx, :, :] = event_data['waveforms'][:, :max_samples]
-
+            waveforms[i, slot_idx, :, :] = event_data['waveforms'][:, :max_samples]
 
     return waveforms, fadc_info
 
@@ -460,6 +459,11 @@ def process_fadc_data(filename, max_event=None, output_dir="output", verbose=Fal
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
+    # get the run number
+    match = re.search(r'_(\d+)\.evio\.', filename)
+    if match:
+       run_number = match.group(1)
+       
     # Open the EVIO file
     with EvioFile(filename) as evio_file:
         total_event_count = evio_file.get_total_event_count()
@@ -500,8 +504,8 @@ def process_fadc_data(filename, max_event=None, output_dir="output", verbose=Fal
             print(f"Final waveform array shape: {waveforms.shape}")
 
             # Save data to numpy files
-            np.save(os.path.join(output_dir, "fadc_waveforms.npy"), waveforms)
-            np.save(os.path.join(output_dir, "fadc_info.npy"), fadc_info)
+            np.save(os.path.join(output_dir, f"fadc_waveforms_{run_number}.npy"), waveforms)
+            np.save(os.path.join(output_dir, f"fadc_info_{run_number}.npy"), fadc_info)
 
             # Generate time histogram
             #print("\nGenerating time histogram...")
@@ -524,10 +528,10 @@ def main():
                         help="Directory where output files will be saved.")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Enable verbose output.")
-    parser.add_argument("-p", "--plot", action="store_true",
-                        help="Generate diagnostic plots.")
-    parser.add_argument("-t", "--time-hist", action="store_true",
-                        help="Generate only the time histogram without other plots.")
+#    parser.add_argument("-p", "--plot", action="store_true",
+#                        help="Generate diagnostic plots.")
+#    parser.add_argument("-t", "--time-hist", action="store_true",
+#                        help="Generate only the time histogram without other plots.")
     args = parser.parse_args()
 
     # Run the processing for each file
@@ -536,7 +540,8 @@ def main():
             file,
             max_event=args.events,
             output_dir=args.output_dir,
-            verbose=args.verbose or args.plot or args.time_hist
+            #verbose=args.verbose or args.plot or args.time_hist
+            verbose=args.verbose
         )
 
         #if waveforms.size > 0:
