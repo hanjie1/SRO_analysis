@@ -1,7 +1,7 @@
 # SRO_analysis
 
 ## FADC_waveform directory
-* Decode the trigger path data:
+* Decode the trigger path FADC data:
 ```
 pyhton analyze_roc_trig_fadc250.py <data file> 
 ```
@@ -19,3 +19,24 @@ jupter notebook
 ```
 3. channel_waveform.ipynb:
 Load the numpy array files "fadc_waveforms.npy" and "fadc_info.npy" to plot the raw waveforms of a given channel
+
+## FADC_SRO directory
+* Decode the streaming FADC data
+```
+python analyze_sro_fadc250.py <data file>
+```
+This decodes the evio data file. The output is saved at "output/fadc_sro_data_run<run_number>.json"
+```
+python plot_sro_data.py
+```
+Load the json file and plot the charge for each channel.
+
+## FADC_ersap directory
+* The ERSAP output is a list of FADC hits within each time frame; It's saved at ersap/install/user-data/data/output/\*.data. Needs to rename it as a ".csv" file to run the python script below to get the numpy array.
+```
+python csv2npy.py <csv file>
+```
+* Make plots from the numpy file:
+```
+python plot_sro_hits.py <npy file>
+```

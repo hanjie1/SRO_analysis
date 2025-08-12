@@ -166,6 +166,12 @@ def process_fadc_data(filename, max_event=None, output_dir="output", verbose=Fal
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
+    # get the run number
+    match = re.search(r'_(\d+)\.evio\.', filename)
+    if match:
+       run_number = match.group(1)
+
+
     # Open the EVIO file
     with EvioFile(filename) as evio_file:
         total_event_count = evio_file.get_total_event_count()
@@ -201,7 +207,7 @@ def process_fadc_data(filename, max_event=None, output_dir="output", verbose=Fal
 
         if len(processed_events) > 0:
 
-           outfile = output_dir+'/fadc_sro_data.json'
+           outfile = output_dir+f"/fadc_sro_data_run{run_number}.json"
            with open(outfile, 'w') as file:
                 json.dump(processed_events, file)
 
