@@ -7,9 +7,19 @@ pyhton analyze_roc_trig_fadc250.py <data file>
 ```
 The default output numpy arrays are saved at "output/fadc_waveforms_{run_number}.npy" and "output/fadc_info_{run_number}.npy"
 
-fadc_waveforms_{run number}.py --- numpy array: event, slot, chan, waveform sample data
+fadc_waveforms_{run number}.npy --- numpy array: event, slot, chan, waveform sample data
 
-fadc_info_{run_number}.py --- number array: event, slot_id, evt_num, time, channels, widths, integrals, peaks, overs 
+fadc_info_{run_number}.npy --- number array: event, slot_id, evt_num, time, channels, widths, integrals, peaks, overs 
+
+* Plot FADC waveforms:
+```
+pyhton plot_waveform.py <numpy file>
+```
+It can plot the raw waveforms for a given slot, channal, event range into one figure;
+
+It can plot the raw waveforms for a given slot, channel, event range into seperate figures;
+
+It can plot the raw waveforms for a given slot, event range, all 16 channels into seperate figures;
 
 * Use Jupyter Notebook to plot the waveforms
 1. To make the jupyter book point to the default configuration, add this to the login shell script:

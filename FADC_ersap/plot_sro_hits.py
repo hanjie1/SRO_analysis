@@ -119,6 +119,34 @@ class SRODataAnalyzer:
         plt.grid(True)
         plt.show()
 
+    def plot_charge_histograms_all_channels(self, crate_val=2, slot_val=13, bins=50):
+        channels = range(16)
+        fig, axes = plt.subplots(4, 4, figsize=(16, 12))
+        axes = axes.flatten()
+
+        for i, ch in enumerate(channels):
+            ax = axes[i]
+            df_sel = self.df[
+                (self.df['crate'] == crate_val) &
+                (self.df['slot'] == slot_val) &
+                (self.df['channel'] == ch)
+            ]
+
+            if df_sel.empty:
+                ax.text(0.5, 0.5, "No data", ha="center", va="center")
+                ax.set_title(f"Ch {ch}")
+                ax.axis("off")
+                continue
+
+            ax.hist(df_sel['charge'], bins=bins, edgecolor='black', alpha=0.7)
+            ax.set_title(f"Ch {ch}")
+            ax.set_yscale("log")  # log scale for y
+            ax.grid(True, which="both", axis="y")
+
+        fig.suptitle(f"Charge Histograms (crate={crate_val}, slot={slot_val})", fontsize=16)
+        fig.tight_layout(rect=[0, 0, 1, 0.97])
+        plt.show()
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python plot_sro_hits.py <filename.npy>")
@@ -128,4 +156,5 @@ if __name__ == "__main__":
 #    analyzer.plot_npy()
 #    analyzer.calculate_rate()
 #    analyzer.calculate_rate_all_channels()
-    analyzer.plot_charge_histogram(2,15,15)
+#    analyzer.plot_charge_histogram(2,15,15)
+    analyzer.plot_charge_histograms_all_channels(2,13)
